@@ -1,0 +1,10 @@
+from typing import Literal
+
+from pydantic import BaseModel, Field
+
+
+class DocumentUploadResponse(BaseModel):
+    document_id: str = Field(..., description="Unique identifier assigned to the uploaded document.")
+    original_filename: str = Field(..., description="Filename provided by the client.")
+    stored_filename: str = Field(..., description="Filename used to store the document on disk.")
+    status: Literal["uploaded"] = Field(..., description="Upload status.")
