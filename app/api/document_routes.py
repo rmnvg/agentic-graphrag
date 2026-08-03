@@ -1,6 +1,11 @@
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 
-from app.models.document_models import DocumentUploadResponse
+from app.models.document_models import DocumentParseResponse, DocumentUploadResponse
+from app.services.document_parser_service import (
+    DocumentNotFoundError,
+    DocumentParserError,
+    parse_uploaded_document,
+)
 from app.services.document_service import (
     DocumentUploadError,
     InvalidDocumentUploadError,
@@ -30,3 +35,25 @@ async def upload_document(file: UploadFile = File(...)) -> DocumentUploadRespons
         ) from exc
 
     return DocumentUploadResponse(**upload_result)
+
+
+@router.post(
+    "/{document_id}/parse",
+    response_model=DocumentParseResponse,
+    status_code=status.HTTP_200_OK,
+)
+def parse_document(document_id: str) -> DocumentParseResponse:
+    try:
+        parse_result = parse_uploaded_document(document_id)
+    except DocumentNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except DocumentParserError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to parse document.",
+        ) from exc
+
+    return DocumentParseResponse(**parse_result)

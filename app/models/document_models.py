@@ -8,3 +8,9 @@ class DocumentUploadResponse(BaseModel):
     original_filename: str = Field(..., description="Filename provided by the client.")
     stored_filename: str = Field(..., description="Filename used to store the document on disk.")
     status: Literal["uploaded"] = Field(..., description="Upload status.")
+
+
+class DocumentParseResponse(BaseModel):
+    document_id: str = Field(..., description="Unique identifier of the parsed document.")
+    status: Literal["parsed"] = Field(..., description="Parsing status.")
+    output_path: str = Field(..., description="Path to the structured JSON parsing output.")
