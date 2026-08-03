@@ -20,3 +20,11 @@ class DocumentChunkResponse(BaseModel):
     document_id: str = Field(..., description="Unique identifier of the chunked document.")
     chunk_count: int = Field(..., ge=0, description="Number of chunks generated for the document.")
     status: Literal["chunked"] = Field(..., description="Chunking status.")
+
+
+class DocumentEmbeddingResponse(BaseModel):
+    document_id: str = Field(..., description="Unique identifier of the embedded document.")
+    embedding_model: str = Field(..., description="Embedding model used for generation.")
+    embedding_dimension: int = Field(..., gt=0, description="Embedding vector dimension.")
+    embedded_chunks: int = Field(..., ge=0, description="Number of chunks embedded.")
+    status: Literal["embedded"] = Field(..., description="Embedding status.")

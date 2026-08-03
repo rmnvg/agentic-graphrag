@@ -67,15 +67,12 @@ def chunk_processed_document(
         )
     except DocumentChunkingFailedError:
         temporary_output_path.unlink(missing_ok=True)
-        output_path.unlink(missing_ok=True)
         raise
     except OSError as exc:
         temporary_output_path.unlink(missing_ok=True)
-        output_path.unlink(missing_ok=True)
         raise DocumentChunkingFailedError("Failed to persist document chunks.") from exc
     except Exception as exc:
         temporary_output_path.unlink(missing_ok=True)
-        output_path.unlink(missing_ok=True)
         raise DocumentChunkingFailedError("Failed to chunk processed document.") from exc
 
     return {
