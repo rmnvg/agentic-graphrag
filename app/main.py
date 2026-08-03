@@ -1,8 +1,9 @@
 from fastapi import FastAPI
+from app.api.routes import router
 
-app = FastAPI(title="Agentic GraphRAG API")
+app = FastAPI(
+    title="Agentic GraphRAG",
+    version="0.1.0"
+)
 
-
-@app.get("/")
-def home():
-    return {"message": "Welcome to Agentic GraphRAG"}
+app.include_router(router)
