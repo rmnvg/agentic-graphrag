@@ -3,6 +3,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from app.models.document_models import (
     DocumentChunkResponse,
     DocumentEmbeddingResponse,
+    DocumentIndexResponse,
     DocumentParseResponse,
     DocumentUploadResponse,
 )
@@ -25,6 +26,11 @@ from app.services.embedding_service import (
     ChunkedDocumentNotFoundError,
     DocumentEmbeddingError,
     embed_chunked_document,
+)
+from app.services.indexing_service import (
+    DocumentIndexingError,
+    EmbeddedDocumentNotFoundError,
+    index_embedded_document,
 )
 
 router = APIRouter(prefix="/api/v1/documents", tags=["documents"])
@@ -119,3 +125,26 @@ def embed_document(document_id: str) -> DocumentEmbeddingResponse:
         ) from exc
 
     return DocumentEmbeddingResponse(**embedding_result)
+
+
+@router.post(
+    "/{document_id}/index",
+    response_model=DocumentIndexResponse,
+    status_code=status.HTTP_200_OK,
+)
+def index_document(document_id: str) -> DocumentIndexResponse:
+    """Upsert a document's embedded chunks into Qdrant."""
+    try:
+        indexing_result = index_embedded_document(document_id)
+    except EmbeddedDocumentNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except DocumentIndexingError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to index document vectors.",
+        ) from exc
+
+    return DocumentIndexResponse(**indexing_result)

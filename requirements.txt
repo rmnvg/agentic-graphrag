@@ -4,3 +4,4 @@ pymupdf4llm
 python-multipart
 sentence-transformers
 uvicorn[standard]
+qdrant-client
