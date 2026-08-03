@@ -28,3 +28,12 @@ class DocumentEmbeddingResponse(BaseModel):
     embedding_dimension: int = Field(..., gt=0, description="Embedding vector dimension.")
     embedded_chunks: int = Field(..., ge=0, description="Number of chunks embedded.")
     status: Literal["embedded"] = Field(..., description="Embedding status.")
+
+
+class DocumentIndexResponse(BaseModel):
+    """Response returned after embedded chunks are indexed in Qdrant."""
+
+    document_id: str = Field(..., description="Unique identifier of the indexed document.")
+    collection: Literal["documents"] = Field(..., description="Qdrant collection receiving the vectors.")
+    indexed_vectors: int = Field(..., ge=0, description="Number of vectors upserted.")
+    status: Literal["indexed"] = Field(..., description="Indexing status.")
