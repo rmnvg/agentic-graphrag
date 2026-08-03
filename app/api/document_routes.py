@@ -1,6 +1,15 @@
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 
-from app.models.document_models import DocumentParseResponse, DocumentUploadResponse
+from app.models.document_models import (
+    DocumentChunkResponse,
+    DocumentParseResponse,
+    DocumentUploadResponse,
+)
+from app.services.chunking_service import (
+    DocumentChunkingError,
+    ProcessedDocumentNotFoundError,
+    chunk_processed_document,
+)
 from app.services.document_parser_service import (
     DocumentNotFoundError,
     DocumentParserError,
@@ -57,3 +66,25 @@ def parse_document(document_id: str) -> DocumentParseResponse:
         ) from exc
 
     return DocumentParseResponse(**parse_result)
+
+
+@router.post(
+    "/{document_id}/chunk",
+    response_model=DocumentChunkResponse,
+    status_code=status.HTTP_200_OK,
+)
+def chunk_document(document_id: str) -> DocumentChunkResponse:
+    try:
+        chunk_result = chunk_processed_document(document_id)
+    except ProcessedDocumentNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except DocumentChunkingError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to chunk document.",
+        ) from exc
+
+    return DocumentChunkResponse(**chunk_result)

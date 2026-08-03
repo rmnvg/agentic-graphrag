@@ -14,3 +14,9 @@ class DocumentParseResponse(BaseModel):
     document_id: str = Field(..., description="Unique identifier of the parsed document.")
     status: Literal["parsed"] = Field(..., description="Parsing status.")
     output_path: str = Field(..., description="Path to the structured JSON parsing output.")
+
+
+class DocumentChunkResponse(BaseModel):
+    document_id: str = Field(..., description="Unique identifier of the chunked document.")
+    chunk_count: int = Field(..., ge=0, description="Number of chunks generated for the document.")
+    status: Literal["chunked"] = Field(..., description="Chunking status.")
