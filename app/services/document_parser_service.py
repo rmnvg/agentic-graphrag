@@ -62,11 +62,9 @@ def parse_uploaded_document(document_id: str) -> dict[str, str]:
         )
     except DocumentParsingFailedError:
         temporary_output_path.unlink(missing_ok=True)
-        output_path.unlink(missing_ok=True)
         raise
     except OSError as exc:
         temporary_output_path.unlink(missing_ok=True)
-        output_path.unlink(missing_ok=True)
         raise DocumentParsingFailedError("Failed to write parsed document output.") from exc
 
     return {
