@@ -1,3 +1,4 @@
 fastapi
+pymupdf4llm
 python-multipart
 uvicorn[standard]
