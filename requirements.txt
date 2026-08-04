@@ -1,4 +1,5 @@
 fastapi
+groq
 langchain-text-splitters
 pymupdf4llm
 python-multipart
