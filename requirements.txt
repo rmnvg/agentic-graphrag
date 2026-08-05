@@ -6,3 +6,4 @@ python-multipart
 sentence-transformers
 uvicorn[standard]
 qdrant-client
+rank-bm25
