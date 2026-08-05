@@ -69,7 +69,11 @@ def retrieve_relevant_chunks(
 
     try:
         active_retriever = retriever or get_retriever()
-        matches = active_retriever.retrieve(query_vector=query_vector, top_k=top_k)
+        matches = active_retriever.retrieve(
+            query=normalized_query,
+            query_vector=query_vector,
+            top_k=top_k,
+        )
     except RetrieverError as exc:
         logger.exception("Qdrant search failed.")
         raise RetrievalFailedError("Unable to retrieve relevant document chunks.") from exc

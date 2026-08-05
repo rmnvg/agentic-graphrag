@@ -39,7 +39,12 @@ class QdrantRetriever(BaseRetriever):
             api_key=configured_api_key or None,
         )
 
-    def retrieve(self, query_vector: list[float], top_k: int) -> list[RetrievedChunk]:
+    def retrieve(
+        self,
+        query: str,
+        query_vector: list[float],
+        top_k: int,
+    ) -> list[RetrievedChunk]:
         """Query Qdrant and map matching point payloads into stable result objects."""
         try:
             response = self._client.query_points(

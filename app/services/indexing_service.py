@@ -14,6 +14,7 @@ from app.services.vectorstores import (
     VectorStoreError,
     get_vectorstore,
 )
+from app.services.lexical import BM25IndexStore, BM25IndexStoreError
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ def index_embedded_document(
     document_id: str,
     vector_store: BaseVectorStore | None = None,
     upsert_batch_size: int | None = None,
+    bm25_index_store: BM25IndexStore | None = None,
 ) -> dict[str, Any]:
     """Upsert every embedded chunk for a document into Qdrant.
 
@@ -48,6 +50,7 @@ def index_embedded_document(
         document_id: UUID assigned to the document pipeline.
         vector_store: Optional store injection for tests or alternate backends.
         upsert_batch_size: Optional number of points submitted per Qdrant request.
+        bm25_index_store: Optional local BM25 store injection for tests.
 
     Returns:
         API response payload with indexing outcome details.
@@ -84,6 +87,13 @@ def index_embedded_document(
         for point_batch in _batches(points, active_batch_size):
             active_vector_store.upsert_points(DOCUMENTS_COLLECTION, point_batch)
 
+        logger.info("Updating local BM25 index for document '%s'.", normalized_document_id)
+        active_bm25_index_store = bm25_index_store or BM25IndexStore()
+        active_bm25_index_store.replace_document_chunks(
+            document_id=normalized_document_id,
+            chunks=[_lexical_chunk_from_point(point) for point in points],
+        )
+
         logger.info(
             "Completed indexing %d vectors for document '%s'.",
             len(points),
@@ -95,6 +105,9 @@ def index_embedded_document(
     except VectorStoreError as exc:
         logger.exception("Qdrant indexing failed for '%s'.", document_id)
         raise DocumentIndexingFailedError("Unable to index document vectors.") from exc
+    except BM25IndexStoreError as exc:
+        logger.exception("Local BM25 indexing failed for '%s'.", document_id)
+        raise DocumentIndexingFailedError("Unable to index document chunks for BM25.") from exc
     except (OSError, ValueError, TypeError) as exc:
         logger.exception("Invalid embedding data for '%s'.", document_id)
         raise DocumentIndexingFailedError("Unable to index document vectors.") from exc
@@ -230,3 +243,8 @@ def _get_upsert_batch_size() -> int:
 def _batches(points: list[VectorPoint], batch_size: int) -> list[list[VectorPoint]]:
     """Split points into bounded upsert requests."""
     return [points[index : index + batch_size] for index in range(0, len(points), batch_size)]
+
+
+def _lexical_chunk_from_point(point: VectorPoint) -> dict[str, Any]:
+    """Create one BM25 record from the canonical Qdrant point payload."""
+    return {"chunk_id": point.point_id, **point.payload}

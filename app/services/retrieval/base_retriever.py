@@ -40,5 +40,10 @@ class BaseRetriever(ABC):
     """Interface implemented by semantic retrieval backends."""
 
     @abstractmethod
-    def retrieve(self, query_vector: list[float], top_k: int) -> list[RetrievedChunk]:
+    def retrieve(
+        self,
+        query: str,
+        query_vector: list[float],
+        top_k: int,
+    ) -> list[RetrievedChunk]:
         """Return the highest scoring chunks for a query vector."""

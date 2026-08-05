@@ -15,7 +15,7 @@ class SearchRequest(BaseModel):
 class SearchMatch(BaseModel):
     """A semantically relevant chunk returned by Qdrant."""
 
-    score: float = Field(..., description="Cosine similarity score assigned by Qdrant.")
+    score: float = Field(..., description="Hybrid reciprocal-rank-fusion relevance score.")
     document_id: str = Field(..., description="Source document identifier.")
     chunk_id: str = Field(..., description="Source chunk identifier.")
     page: int | None = Field(default=None, description="Primary source page when available.")
