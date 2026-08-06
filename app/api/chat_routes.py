@@ -3,10 +3,10 @@
 from fastapi import APIRouter, HTTPException, status
 
 from app.models.chat_models import ChatRequest, ChatResponse
+from app.graph.graph import invoke_rag_graph
 from app.services.rag_service import (
     InvalidQuestionError,
     RAGServiceError,
-    generate_rag_answer,
 )
 
 router = APIRouter(prefix="/api/v1", tags=["chat"])
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/api/v1", tags=["chat"])
 def chat(request: ChatRequest) -> ChatResponse:
     """Answer one question exclusively from retrieved document context."""
     try:
-        rag_result = generate_rag_answer(question=request.question)
+        rag_result = invoke_rag_graph(question=request.question)
     except InvalidQuestionError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
