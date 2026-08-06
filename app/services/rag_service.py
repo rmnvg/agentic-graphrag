@@ -61,6 +61,22 @@ def generate_rag_answer(
         PromptGenerationFailedError: If prompt formatting fails.
         RAGGenerationFailedError: If the LLM request fails.
     """
+    retrieval_result = retrieve_rag_chunks(
+        question=question,
+        retrieval_function=retrieval_function,
+    )
+    return generate_answer_from_chunks(
+        question=retrieval_result["question"],
+        matches=retrieval_result["matches"],
+        llm=llm,
+    )
+
+
+def retrieve_rag_chunks(
+    question: str,
+    retrieval_function: Callable[[str, int], dict[str, Any]] = retrieve_relevant_chunks,
+) -> dict[str, Any]:
+    """Retrieve and validate chunks needed for one grounded RAG answer."""
     normalized_question = _normalize_question(question)
     logger.info("Incoming RAG question received (length=%d).", len(normalized_question))
     logger.info("RAG retrieval started.")
@@ -76,6 +92,17 @@ def generate_rag_answer(
         raise RAGRetrievalFailedError("Unable to retrieve supporting document chunks.") from exc
 
     logger.info("Retrieved %d chunks for RAG generation.", len(matches))
+
+    return {"question": normalized_question, "matches": matches}
+
+
+def generate_answer_from_chunks(
+    question: str,
+    matches: list[dict[str, Any]],
+    llm: BaseLLM | None = None,
+) -> dict[str, Any]:
+    """Build a grounded prompt and generate an answer from retrieved chunks."""
+    normalized_question = _normalize_question(question)
     logger.info("RAG prompt generation started.")
 
     try:

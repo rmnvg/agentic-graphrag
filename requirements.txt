@@ -1,6 +1,7 @@
 fastapi
 groq
 langchain-text-splitters
+langgraph
 pymupdf4llm
 python-multipart
 sentence-transformers
