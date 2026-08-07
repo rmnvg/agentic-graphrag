@@ -5,6 +5,7 @@ from typing import Any
 
 from app.services.embeddings import BaseEmbedder, get_sentence_transformer_embedder
 from app.services.retrieval import BaseRetriever, RetrieverError, get_retriever
+from app.services.reranking_service import RerankingService, get_reranking_service
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,7 @@ def retrieve_relevant_chunks(
     top_k: int = 5,
     embedder: BaseEmbedder | None = None,
     retriever: BaseRetriever | None = None,
+    reranking_service: RerankingService | None = None,
 ) -> dict[str, Any]:
     """Return the most relevant indexed chunks for a natural-language query.
 
@@ -38,9 +40,10 @@ def retrieve_relevant_chunks(
 
     Args:
         query: User's natural-language question.
-        top_k: Maximum number of similar chunks to return.
+        top_k: Final number of reranked chunks to return.
         embedder: Optional embedder injection for tests.
         retriever: Optional retrieval backend injection for tests.
+        reranking_service: Optional reranking coordinator injection for tests.
 
     Returns:
         Query and ranked RAG chunks ready for a later answer-generation stage.
@@ -51,7 +54,8 @@ def retrieve_relevant_chunks(
         RetrievalFailedError: If Qdrant retrieval fails.
     """
     normalized_query = _normalize_query(query)
-    _validate_top_k(top_k)
+    active_reranking_service = reranking_service or get_reranking_service()
+    _validate_top_k(top_k, active_reranking_service.max_candidates)
 
     logger.info("Incoming semantic search query received (length=%d, top_k=%d).", len(normalized_query), top_k)
     logger.info("Query embedding generation started.")
@@ -65,14 +69,14 @@ def retrieve_relevant_chunks(
         raise QueryEmbeddingFailedError("Unable to generate query embedding.") from exc
 
     logger.info("Query embedding generation completed.")
-    logger.info("Qdrant search started.")
+    logger.info("Hybrid retrieval started.")
 
     try:
         active_retriever = retriever or get_retriever()
         matches = active_retriever.retrieve(
             query=normalized_query,
             query_vector=query_vector,
-            top_k=top_k,
+            top_k=active_reranking_service.max_candidates,
         )
     except RetrieverError as exc:
         logger.exception("Qdrant search failed.")
@@ -81,7 +85,12 @@ def retrieve_relevant_chunks(
         logger.exception("Semantic retrieval failed.")
         raise RetrievalFailedError("Unable to retrieve relevant document chunks.") from exc
 
-    logger.info("Retrieved %d chunks from Qdrant.", len(matches))
+    logger.info("Retrieved %d RRF chunks for reranking.", len(matches))
+    reranked_matches = active_reranking_service.rerank(
+        question=normalized_query,
+        retrieved_chunks=matches,
+        final_top_k=top_k,
+    )
     logger.info("Semantic search completed.")
 
     return {
@@ -98,7 +107,7 @@ def retrieve_relevant_chunks(
                 "token_count": match.token_count,
                 "metadata": match.metadata,
             }
-            for match in matches
+            for match in reranked_matches
         ],
     }
 
@@ -115,10 +124,14 @@ def _normalize_query(query: str) -> str:
     return normalized_query
 
 
-def _validate_top_k(top_k: int) -> None:
+def _validate_top_k(top_k: int, max_candidates: int) -> None:
     """Validate the requested result limit before invoking dependencies."""
     if isinstance(top_k, bool) or not isinstance(top_k, int) or top_k < 1:
         raise InvalidSearchQueryError("top_k must be a positive integer.")
+    if top_k > max_candidates:
+        raise InvalidSearchQueryError(
+            f"top_k must not exceed the rerank candidate limit ({max_candidates})."
+        )
 
 
 def _extract_query_vector(embeddings: list[list[float]]) -> list[float]:
