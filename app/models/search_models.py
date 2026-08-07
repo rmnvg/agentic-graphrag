@@ -9,13 +9,18 @@ class SearchRequest(BaseModel):
     """Request body for semantic chunk retrieval."""
 
     query: str = Field(..., description="Natural-language question to search for.")
-    top_k: int = Field(default=5, ge=1, le=100, description="Maximum chunks to return.")
+    top_k: int = Field(
+        default=5,
+        ge=1,
+        le=100,
+        description="Maximum reranked chunks to return, bounded by configured candidates.",
+    )
 
 
 class SearchMatch(BaseModel):
     """A semantically relevant chunk returned by Qdrant."""
 
-    score: float = Field(..., description="Hybrid reciprocal-rank-fusion relevance score.")
+    score: float = Field(..., description="Original hybrid reciprocal-rank-fusion score.")
     document_id: str = Field(..., description="Source document identifier.")
     chunk_id: str = Field(..., description="Source chunk identifier.")
     page: int | None = Field(default=None, description="Primary source page when available.")

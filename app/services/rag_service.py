@@ -11,10 +11,11 @@ from app.services.retrieval_service import (
     SemanticRetrievalError,
     retrieve_relevant_chunks,
 )
+from app.services.reranking_service import get_final_reranked_chunks
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_RAG_TOP_K = 5
+DEFAULT_RAG_TOP_K = get_final_reranked_chunks()
 
 
 class RAGServiceError(Exception):
